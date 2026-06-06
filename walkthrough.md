@@ -1,11 +1,11 @@
-# Core Framework Navigator Implementation Walkthrough
+# Foundero Startup Accelerator Implementation Walkthrough
 
-We have built a fully interactive full-stack Next.js application inside the `/Users/ranjanr/Desktop/VibeCoding/jetsetgo` folder. It integrates a 12-step matrix with active dependency tracking, a new onboarding launcher, and Critic agent auditing.
+We have built a fully interactive full-stack Next.js application named **Foundero** (configured for `https://foundero.app/`) inside the `/Users/ranjanr/Desktop/VibeCoding/jetsetgo` folder. It integrates a 12-step matrix with active dependency tracking, a new onboarding launcher, and Critic agent auditing.
 
 ## 📁 Key File Map
 
 ### 1. Onboarding & Initializer Routes
-- [src/app/page.tsx](file:///Users/ranjanr/Desktop/VibeCoding/jetsetgo/src/app/page.tsx): Premium onboarding landing page. Founder inputs names and raw product ideas (e.g. "ultrasonic eyeglasses cleaning box").
+- [src/app/page.tsx](file:///Users/ranjanr/Desktop/VibeCoding/jetsetgo/src/app/page.tsx): Premium onboarding landing page. Founder inputs names and raw product ideas. Features the new logo, top header navigation, and bottom footer links.
 - [src/app/api/workspace/initialize/route.ts](file:///Users/ranjanr/Desktop/VibeCoding/jetsetgo/src/app/api/workspace/initialize/route.ts): Bootstraps custom steps (e.g. S1 Matrix, S3 TAM, S8 LTV, S11 Roadmap features) depending on the keyword context of the submitted product idea.
 
 ### 2. State Logic & Endpoints
@@ -38,6 +38,10 @@ We have built a fully interactive full-stack Next.js application inside the `/Us
 ---
 
 ## 🧪 Verification & Build Results
+- **Foundero Visual Rebranding**:
+  - Designed and generated a minimalist geometric logo icon `public/foundero_logo.png` showcasing an abstract letter 'F' forming a dynamic forward-pointing arrow.
+  - Reorganized the onboarding landing page (`src/app/page.tsx`) to incorporate a premium sticky top Header (with logo and navigation links) and a responsive bottom Footer featuring support/legal links (Privacy Policy, Terms of Service, Contact Support, Documentation).
+  - Restructured the landing page layout for high legibility, clean styling, and mobile responsiveness.
 - **Vercel Cloud Storage Persistence**: Migrated state management from synchronous local disk operations (`fs.writeFileSync`) to asynchronous **Vercel KV** and **Vercel Blob** cloud storage APIs.
 - **Local Development Fallbacks**: Designed fallback code paths that automatically use the local filesystem (`state.json` and `steps/` folder) if Vercel API credentials are not found in the `.env.local` config, preserving developer setup simplicity.
 - **Color-Coded Save & Resync Notifications**: Replaced native browser `alert()` popups for both saving steps and executing state resynchronizations with animated status transitions on their respective action buttons:

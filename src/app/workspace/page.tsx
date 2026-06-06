@@ -340,7 +340,7 @@ export default function WorkspaceDashboard() {
             <h1 className="text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">
               {state.startup_name}
             </h1>
-            <p className="text-xs text-slate-100 font-mono">Core Venture Navigator</p>
+            <p className="text-xs text-slate-100 font-mono">Foundero Workspace</p>
           </div>
           <button
             onClick={triggerResync}
