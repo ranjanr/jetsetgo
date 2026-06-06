@@ -13,6 +13,7 @@ export default function OnboardingLanding() {
   const [currentStep, setCurrentStep] = useState(0);
   const [activeStartup, setActiveStartup] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
 
   // Check if a venture workspace has already been initialized
   useEffect(() => {
@@ -22,12 +23,63 @@ export default function OnboardingLanding() {
         const hasDrafts = Object.values(data.steps || {}).some(
           (s: any) => s.status !== "Not Started"
         );
-        if (data.startup_name && (data.startup_name !== "JetSetGo" || hasDrafts)) {
+        if (
+          data.startup_name &&
+          data.startup_name !== "JetSetGo" &&
+          data.startup_name !== "SonicSight" &&
+          data.startup_name !== "FlowPilot AI" &&
+          hasDrafts
+        ) {
           setActiveStartup(data.startup_name);
         }
       })
       .catch((err) => console.error("Error checking workspace state:", err));
   }, []);
+
+  const handleLoadDemo = async (demoKey: string) => {
+    setIsDemoModalOpen(false);
+    setLoading(true);
+    setCurrentStep(0);
+
+    // Simulate animated loading steps for a rich onboarding experience
+    const interval = setInterval(() => {
+      setCurrentStep((prev) => {
+        if (prev < loadingSteps.length - 1) {
+          return prev + 1;
+        }
+        clearInterval(interval);
+        return prev;
+      });
+    }, 600);
+
+    try {
+      const res = await fetch("/api/workspace/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          demoType: demoKey,
+          startup_name: demoKey === "sonicsight" ? "SonicSight" : "FlowPilot AI",
+          product_idea: demoKey === "sonicsight" 
+            ? "An aesthetic, desktop ultrasonic cleaning box designed for high-end prescription eyeglasses and blue-light lenses."
+            : "An AI-powered voice assistant and dispatch co-pilot for solo residential plumbers."
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to initialize demo.");
+      }
+
+      setTimeout(() => {
+        clearInterval(interval);
+        router.push("/workspace");
+      }, 4800);
+
+    } catch (err) {
+      clearInterval(interval);
+      setLoading(false);
+      alert("An error occurred during demo initialization. Please try again.");
+    }
+  };
 
   const loadingSteps = [
     "Spinning up Core Framework Navigator...",
@@ -171,24 +223,38 @@ export default function OnboardingLanding() {
                 <>
                   <button
                     onClick={() => router.push("/workspace")}
-                    className="px-6 py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer flex items-center justify-center gap-2 text-center text-white"
+                    className="px-6 py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer flex items-center justify-center gap-2 text-center text-white font-sans"
                   >
                     Resume Workspace ({activeStartup}) →
                   </button>
                   <button
                     onClick={() => setIsModalOpen(true)}
-                    className="px-6 py-3.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 cursor-pointer text-center"
+                    className="px-6 py-3.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 cursor-pointer text-center font-sans"
                   >
                     Start New Venture
                   </button>
+                  <button
+                    onClick={() => setIsDemoModalOpen(true)}
+                    className="px-6 py-3.5 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-violet-400 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 cursor-pointer text-center font-sans"
+                  >
+                    How It Works (Demos)
+                  </button>
                 </>
               ) : (
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="px-8 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer text-center text-white"
-                >
-                  Launch Foundero Accelerator →
-                </button>
+                <>
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="px-8 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer text-center text-white font-sans"
+                  >
+                    Launch Foundero Accelerator →
+                  </button>
+                  <button
+                    onClick={() => setIsDemoModalOpen(true)}
+                    className="px-8 py-4 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 cursor-pointer text-center font-sans"
+                  >
+                    How It Works (Demos)
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -329,6 +395,114 @@ export default function OnboardingLanding() {
                 Launch Framework Accelerator →
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* How It Works (Demo Ventures) Modal */}
+      {isDemoModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full p-8 space-y-6 shadow-2xl relative animate-in fade-in-50 zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
+            {/* Close Button */}
+            <button
+              onClick={() => setIsDemoModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 text-lg cursor-pointer p-1"
+              title="Close Modal"
+            >
+              ✕
+            </button>
+
+            <div>
+              <span className="text-[10px] text-violet-400 font-mono bg-violet-950/60 border border-violet-850 px-2.5 py-1 rounded font-semibold uppercase tracking-wider">
+                Interactive Walkthrough
+              </span>
+              <h2 className="text-3xl font-extrabold text-slate-100 mt-2 font-sans">How Foundero Works</h2>
+              <p className="text-sm text-slate-350 mt-1 font-sans">
+                Explore the power of our 12-step validation framework using one of our high-fidelity, structured demo ventures.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+              {/* Hardware Demo Card */}
+              <div className="bg-slate-950 border border-slate-850 p-6 rounded-xl flex flex-col justify-between hover:border-slate-800 transition">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-rose-400 uppercase font-mono tracking-wider">
+                      🛠️ Hardware Focus
+                    </span>
+                    <span className="text-[9px] bg-rose-950/40 border border-rose-900/30 text-rose-300 px-2 py-0.5 rounded font-mono font-semibold">
+                      Physical Specs
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-bold text-slate-100">SonicSight</h3>
+                    <p className="text-xs text-slate-355 leading-relaxed">
+                      An aesthetic, desktop ultrasonic cleaning box designed for high-end prescription eyeglasses and blue-light lenses, using safe UV-C and sonic waves.
+                    </p>
+                  </div>
+
+                  <div className="border-t border-slate-900 pt-3 space-y-2 text-xs text-slate-200">
+                    <p>
+                      <strong>Step 1 & 2 (Beachhead & Persona):</strong> Narrows the beachhead to remote workers on video calls, rather than targeting 'everyone'.
+                    </p>
+                    <p>
+                      <strong>Step 4 & 5 (Use Case & Product Spec):</strong> Maps physical design (matte aluminum, walnut lid) to a daily coffee-break use case.
+                    </p>
+                    <p>
+                      <strong>Step 8 & 11 (Pricing & MVBP):</strong> Outlines hardware margin modeling (BOM cost of $18 vs retail price of $69) and 3D-printed MVBP.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleLoadDemo("sonicsight")}
+                  className="w-full mt-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold tracking-wide uppercase rounded-lg transition cursor-pointer"
+                >
+                  Explore SonicSight Demo →
+                </button>
+              </div>
+
+              {/* Software Demo Card */}
+              <div className="bg-slate-950 border border-slate-850 p-6 rounded-xl flex flex-col justify-between hover:border-slate-800 transition">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-indigo-400 uppercase font-mono tracking-wider">
+                      💻 Software Focus
+                    </span>
+                    <span className="text-[9px] bg-indigo-950/40 border border-indigo-900/30 text-indigo-300 px-2 py-0.5 rounded font-mono font-semibold">
+                      B2B SaaS Math
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-bold text-slate-100">FlowPilot AI</h3>
+                    <p className="text-xs text-slate-355 leading-relaxed">
+                      An AI-powered voice assistant and dispatch co-pilot for solo residential plumbers that quotes prices and schedules calendar slots automatically.
+                    </p>
+                  </div>
+
+                  <div className="border-t border-slate-900 pt-3 space-y-2 text-xs text-slate-200">
+                    <p>
+                      <strong>Step 3 (First 10 Customers):</strong> Illustrates acquiring first 10 customers by cold-calling local independent plumbers to validate missed-call losses.
+                    </p>
+                    <p>
+                      <strong>Step 6 (Quantified Value Proposition):</strong> Shows B2B ROI math: Solo plumbers lose $3,600/mo in missed calls; FlowPilot costs $150/mo and saves $1,200/mo (8x ROI).
+                    </p>
+                    <p>
+                      <strong>Step 9 & 10 (Assumptions & Testing):</strong> Validates trust in emergency calls via a text-to-speech 'Wizard of Oz' simulation before coding.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleLoadDemo("flowpilot")}
+                  className="w-full mt-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold tracking-wide uppercase rounded-lg transition cursor-pointer"
+                >
+                  Explore FlowPilot Demo →
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

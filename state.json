@@ -1,211 +1,180 @@
 {
-  "startup_name": "Foundero App",
-  "last_updated": "2026-06-06T06:42:44.116Z",
+  "startup_name": "FlowPilot AI",
+  "last_updated": "2026-06-06T14:24:58.174Z",
   "steps": {
     "S1": {
       "id": "S1",
       "title": "Market Segmentation & Beachhead Selection",
-      "status": "Draft",
+      "status": "Verified",
       "requires_resync": false,
-      "raw_submission": "We mapped out three main market sectors for An AI-driven startup navigator. Our beachhead choice is B2B Early Adopters because they have immediate budgets and high buyer intent.",
-      "critic_alerts": [
-        "[!! SYSTEM WARNING: AI Generation failed: Expected ',' or '}' after property value in JSON at position 604 (line 13 column 197)]"
-      ],
+      "raw_submission": "We evaluated several trades segments (plumbers, electricians, HVAC).\n\nSelected Beachhead Segment: Solo independent residential plumbers. They are frequently stuck under sinks or driving, meaning they miss emergency calls (which represents lost jobs).\n\nOther segments considered:\n- Commercial HVAC technicians: Long service contracts, complex corporate billing.\n- Residential electricians: Lower emergency call frequency compared to plumbers.",
+      "critic_alerts": [],
       "structured_data": {
         "markets": [
           {
-            "name": "B2B Early Adopters",
-            "funded": "Low",
-            "compelling_reason": "Low",
-            "value": 4
-          },
-          {
-            "name": "Tech-Savvy Consumer Segment",
+            "name": "Solo Residential Plumbers",
             "funded": "High",
             "compelling_reason": "High",
-            "value": 8
+            "value": 10
           },
           {
-            "name": "Enterprise Custom Clients",
+            "name": "Residential Electricians",
+            "funded": "Medium",
+            "compelling_reason": "Medium",
+            "value": 6
+          },
+          {
+            "name": "Commercial HVAC Contractors",
             "funded": "High",
             "compelling_reason": "Low",
             "value": 5
           }
         ]
       },
-      "synthesized_output": "### Error Fallback Action Plan\n\nAI generation encountered an error: Expected ',' or '}' after property value in JSON at position 604 (line 13 column 197). Review your inputs locally."
+      "synthesized_output": "### S1: Beachhead Selection Summary\n\nSolo residential plumbers are the ideal beachhead due to the immediate financial penalty of missed calls (which immediately route to competitors)."
     },
     "S2": {
       "id": "S2",
       "title": "The End-User Profile & Persona",
-      "status": "Draft",
-      "requires_resync": true,
-      "raw_submission": "Sarah Jenkins is a Boutique Optician. She manages inventory manually and spends 4 hours every Saturday tracking custom frames. Her top pain point is vendor catalog ingestion.",
-      "critic_alerts": [
-        "There is a leap in assuming a 'Boutique Optician' focused on manual inventory and vendor catalog ingestion is automatically an 'Early Adopter' for an 'AI-driven startup navigator' without further information on her tech adoption inclination or how the navigator directly solves her specific operational pain points."
-      ],
+      "status": "Verified",
+      "requires_resync": false,
+      "raw_submission": "Our persona is Bob Miller, a 45-year-old solo plumber running Miller Plumbing in Ohio.\n- He does residential service calls (emergency leaks, water heater swaps).\n- He spends 6-8 hours a day driving or crawling under sinks.\n- Top pain point: Missing emergency calls while working. When a homeowner's basement is flooding, they call 3-4 plumbers. The first one who answers gets the $300 job. Bob misses 3-4 calls a week, costing him over $1,000 in lost work.",
+      "critic_alerts": [],
       "structured_data": {
-        "persona_name": "Marcus Vance",
-        "role": "Operations Manager",
-        "pain_points": "Needs a simple, automated tool to bypass manual spreadsheets and reduce operational friction."
+        "persona_name": "Bob Miller",
+        "role": "Solo Residential Plumber",
+        "pain_points": "Missed emergency calls when physically working under sinks, resulting in lost $300 jobs to competitors."
       },
-      "synthesized_output": "### Persona: Sarah Jenkins, Boutique Optician\n\nSarah Jenkins is a **Boutique Optician** who embodies the daily struggle with manual operations. She dedicates *four grueling hours every Saturday* to manually tracking custom frames, a significant time sink. Her primary frustration, however, lies in the cumbersome process of **vendor catalog ingestion**, which is likely manual and inefficient. While her business is B2B, the connection to being an 'Early Adopter' of an 'AI-driven startup navigator' is a critical assumption. Her needs are immediate: automation and streamlining of her core inventory and vendor data management, not necessarily a broad 'startup navigator' tool. We need to verify if she is actively seeking AI solutions for these specific problems or is open to adopting new technology."
+      "synthesized_output": "### S2: Persona Analysis (Bob Miller)\n\nBob needs a voice assistant that can answer instantly, quote basic prices (e.g. water heater diagnostic for $150), and book calendar slots directly."
     },
     "S3": {
       "id": "S3",
       "title": "The First 10 Customers",
-      "status": "Draft",
-      "requires_resync": true,
-      "raw_submission": "Primary market validation sizing based on targeting 5000 total prospects, assuming a conservative 5% conversion at a $1200 unit price point.",
+      "status": "Verified",
+      "requires_resync": false,
+      "raw_submission": "We cold-called and met with 12 solo plumbers in our local county. 10 of them confirmed that unanswered calls are their biggest source of lost revenue, and 7 agreed to try a voice co-pilot trial.\n\nWe estimate there are 110,000 solo plumbers nationally. Our target conversion is 5% with a software SaaS subscription of $150/month ($1,800/year).",
       "critic_alerts": [],
       "structured_data": {
-        "demographic_size": 5000,
+        "demographic_size": 110000,
         "conversion_rate": 0.05,
-        "price_per_unit": 1200,
-        "calculated_tam": 300000
+        "price_per_unit": 1800,
+        "calculated_tam": 9900000
       },
-      "synthesized_output": "### TAM Sizing Overview\n\nYour beachhead TAM is estimated at **$300,000** annually. Focus on securing your first 10 reference customers to validate this conversion index."
+      "synthesized_output": "### S3: B2B SaaS TAM Sizing\n\nWith 110,000 target solo plumbers, 5% penetration at $1,800/year yields a bottom-up TAM estimate of **$9,900,000/year**."
     },
     "S4": {
       "id": "S4",
       "title": "Full Life Cycle Use Case",
-      "status": "Draft",
-      "requires_resync": true,
-      "raw_submission": "Full lifeycle use case maps across: Online search discovery -> Self-serve sandbox onboarding -> Department pilot rollout -> Full annual contract subscription renewal.",
+      "status": "Verified",
+      "requires_resync": false,
+      "raw_submission": "1. Homeowner calls Bob's plumbing number.\n2. FlowPilot AI answers with Bob's voice assistant clone.\n3. The assistant logs their leak issue, collects address details, quotes the $150 diagnostic fee, and books a calendar slot.\n4. Bob receives an SMS with the booking details while finishing his current job under the sink.",
       "critic_alerts": [],
-      "structured_data": {
-        "lifecycle_phases": [
-          "Online search discovery",
-          "Self-serve sandbox onboarding",
-          "Department pilot rollout",
-          "Full annual contract subscription renewal"
-        ]
-      },
-      "synthesized_output": "### Customer Lifecycle Plan\n\n1. **Acquisition**: Online search discovery.\n2. **Engagement**: Department pilot rollout.\n3. **Monetization**: Full annual contract subscription renewal."
+      "structured_data": {},
+      "synthesized_output": "### S4: Automated Dispatch Loop\n\nHomeowner calls -> Voice assistant answers -> Diagnostic booking confirmed -> Plumber receives direct SMS reminder."
     },
     "S5": {
       "id": "S5",
       "title": "High-Level Product Specification",
-      "status": "Draft",
+      "status": "Verified",
       "requires_resync": false,
-      "raw_submission": "High-level specs for our MVP include: Core Web Control Center Dashboard (Cloud Software), Third-party CRM Integration API (Software Integration).",
+      "raw_submission": "AI Dispatch Co-pilot Web Portal:\n- Twilio-based phone voice clone system answering inbound calls.\n- Google Calendar and Jobber CRM API integration.\n- Automated leak diagnosis intake via user SMS image links.\n- Admin dashboard displaying booking rates and missed-call captures.",
       "critic_alerts": [],
-      "structured_data": {
-        "specifications": [
-          {
-            "name": "Core Web Control Center Dashboard",
-            "platform": "Cloud Software",
-            "complexity": "Low"
-          },
-          {
-            "name": "Third-party CRM Integration API",
-            "platform": "Software Integration",
-            "complexity": "Medium"
-          }
-        ]
-      },
-      "synthesized_output": "### High-Level Product Specifications\n\nYour primary product deliverables are: Core Web Control Center Dashboard (Cloud Software), Third-party CRM Integration API (Software Integration)."
+      "structured_data": {},
+      "synthesized_output": "### S5: Software Systems Architecture\n\nIncludes B2B admin dashboard, Twilio voice routing nodes, and direct calendar synchronizations."
     },
     "S6": {
       "id": "S6",
       "title": "Quantified Value Proposition",
-      "status": "Draft",
-      "requires_resync": true,
-      "raw_submission": "Quantified Value Proposition: Our core benefit is \"Saves operators 4 hours/week in manual bookkeeping and reporting tasks.\", resulting in an estimated $3600/year savings/value.",
+      "status": "Verified",
+      "requires_resync": false,
+      "raw_submission": "This shows our simple math to prove ROI:\n- Average plumbing call value: $300.\n- Average calls missed per week: 3 calls.\n- Total missed opportunity value: $900/week ($3,600/month).\n- FlowPilot AI subscription cost: $150/month.\n- Even if FlowPilot AI only captures 1 missed call per week, it generates an additional $1,200/month in revenue for Bob, yielding an 8x return on subscription investment.",
       "critic_alerts": [],
-      "structured_data": {
-        "value_props": [
-          {
-            "benefit": "Saves operators 4 hours/week in manual bookkeeping and reporting tasks.",
-            "monetary_value": 3600
-          }
-        ]
-      },
-      "synthesized_output": "### Quantified Value Proposition\n\nYour product creates **$3600/year** in economic value. Focus your sales pitch deck around this primary return on investment."
+      "structured_data": {},
+      "synthesized_output": "### S6: Plumber ROI Spreadsheet Math\n\n- Lost Revenue: 3 calls * $300 = $900/week.\n- Captured Revenue: 1 call * $300 * 4 weeks = $1,200/month.\n- Cost: $150/month.\n- Net ROI: $1,050/month increase (8x ROI)."
     },
     "S7": {
       "id": "S7",
-      "title": "Customer Acquisition & Decision-Making Unit",
-      "status": "Draft",
+      "title": "Customer Acquisition & DMU",
+      "status": "Verified",
       "requires_resync": false,
-      "raw_submission": "We will acquire customers using primary founder sales outreach and industry-specific association partnerships.",
+      "raw_submission": "Target DMU: Plumber business owner ( Bob Miller ).\nAcquisition channel: Cold-calling local plumbers via Google Maps and offering a 14-day free trial where we set up the virtual number for them.",
       "critic_alerts": [],
       "structured_data": {},
-      "synthesized_output": ""
+      "synthesized_output": "### S7: B2B acquisition strategy\n\nOffering a high-touch onboarding setup removes technical friction for tradesmen, maximizing free-to-paid conversions."
     },
     "S8": {
       "id": "S8",
       "title": "Business Model & Pricing Framework",
-      "status": "Draft",
+      "status": "Verified",
       "requires_resync": false,
-      "raw_submission": "Pricing matrix: Annual unit contract value of $1200 with 85% margins and 10% churn.",
+      "raw_submission": "We charge $150/month SaaS fee.\nGross Margin: 85% ($1,530 profit per year).\nChurn rate: 10% annual churn.",
       "critic_alerts": [],
       "structured_data": {
-        "annual_price": 1200,
+        "annual_price": 1800,
         "gross_margin": 0.85,
         "churn_rate": 0.1,
-        "calculated_ltv": 10200
+        "calculated_ltv": 15300
       },
-      "synthesized_output": "### Unit Economics Sizing\n\nCalculated Life-Time Value is **$10,200** based on annual billing pricing of $1200. Aim for LTV/CAC ratio > 3:1."
+      "synthesized_output": "### S8: SaaS pricing economic model\n\nAt $150/month and 10% churn, our predicted B2B Customer Lifetime Value is **$15,300**."
     },
     "S9": {
       "id": "S9",
       "title": "Key Assumptions Identification",
-      "status": "Draft",
+      "status": "Verified",
       "requires_resync": false,
-      "raw_submission": "Key assumptions to test: 1. Target customers have high budget intent. 2. Ultrasonic cleaning time under 2 mins is acceptable.",
+      "raw_submission": "We identified the top leap-of-faith assumptions for FlowPilot:\n1. Plumbers will allow an AI to book appointments directly onto their Google Calendar.\n2. Homeowners calling in the middle of a flooding emergency will talk to an AI voice assistant instead of hanging up immediately.\n3. The AI can accurately diagnose basic leak issues from description/photos.",
       "critic_alerts": [],
       "structured_data": {},
-      "synthesized_output": ""
+      "synthesized_output": "### S9: Leap-of-Faith Assumptions\n\nOur biggest risk is homeowner trust: Will they book a job through an AI when their basement is actively flooding? We must test this first."
     },
     "S10": {
       "id": "S10",
       "title": "Key Assumptions Testing",
-      "status": "Draft",
+      "status": "Verified",
       "requires_resync": false,
-      "raw_submission": "We will test these assumptions using 10 face-to-face demo prototypes and landing page sign-up conversion metrics.",
+      "raw_submission": "We tested Assumption 2 (homeowner trust) using a 'Wizard of Oz' simulation.\nWe routed a local plumber's phone line to a Google Voice number. When homeowners called, we played a realistic text-to-speech assistant prompt ('Hi, I am Miller Plumbing's virtual assistant...'). In the background, a team member typed responses live to route their emergency.\nOut of 15 emergency callers, 12 successfully booked their appointment through the assistant without hanging up, passing our validation threshold of 60%.",
       "critic_alerts": [],
       "structured_data": {},
-      "synthesized_output": ""
+      "synthesized_output": "### S10: Wizard of Oz Test Results\n\n- Total calls: 15\n- Booked via AI prompt: 12 (80%)\n- Target threshold: 60%\n- Result: PASS. Homeowners in emergencies will use a prompt-based voice router."
     },
     "S11": {
       "id": "S11",
       "title": "Minimum Viable Business Product (MVBP)",
-      "status": "Draft",
+      "status": "Verified",
       "requires_resync": false,
-      "raw_submission": "Our Minimum Viable Business Product will feature a simple version of: User Auth & Profile Setup, Export API Engine.",
+      "raw_submission": "Our MVBP is a simple Twilio-based phone voice clone with Google Calendar booking integrations. We will run it for 5 local plumbers to capture live service calls.",
       "critic_alerts": [],
       "structured_data": {
         "features": [
           {
             "id": 1,
-            "name": "User Auth & Profile Setup",
-            "benefit": "Secure team invite workspace login",
+            "name": "Voice Assistant Call Routing",
+            "benefit": "Instantly answers homeowner calls",
             "priority": "High",
-            "budget": 6000,
+            "budget": 3000,
             "sprint": "Sprint 1"
           },
           {
             "id": 2,
-            "name": "Export API Engine",
-            "benefit": "Pulls formatted CSV matrices instantly",
-            "priority": "Medium",
-            "budget": 4500,
-            "sprint": "Sprint 2"
+            "name": "Google Calendar Booking Integration",
+            "benefit": "Routes bookings to calendar",
+            "priority": "High",
+            "budget": 2000,
+            "sprint": "Sprint 1"
           }
         ]
       },
-      "synthesized_output": "### MVBP Production Roadmap\n\nFeatures roadmap contains 2 core features. Main feature is **User Auth & Profile Setup** targeting **Sprint 1**."
+      "synthesized_output": "### S11: MVP Launch Roadmap\n\nFeatures focus exclusively on call response and scheduling to solve the plumber's primary pain point."
     },
     "S12": {
       "id": "S12",
       "title": "Next Markets & Pitch Readiness",
-      "status": "Draft",
+      "status": "Verified",
       "requires_resync": false,
-      "raw_submission": "Once beachhead is secure, we will leverage optical chain distributors to expand.",
+      "raw_submission": "Expansion markets: Residential electricians, HVAC service contractors.\nPitch Deck is fully updated with verified customer conversion metrics and homeowner booking trust metrics.",
       "critic_alerts": [],
       "structured_data": {},
-      "synthesized_output": ""
+      "synthesized_output": "### S12: Scale Strategy\n\nFollowing plumber market validation, we will roll out specialized templates for electrical and HVAC dispatch systems."
     }
   }
 }

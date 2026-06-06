@@ -1,12 +1,13 @@
-# S7: Customer Acquisition & Decision-Making Unit
+# S7: Customer Acquisition & DMU
 **Pillar**: Pillar 3: How Does Your Customer Acquire Your Product?
-**Status**: Draft
+**Status**: Verified
 **Resync Required**: No
 
 ---
 
 ## 📥 Raw Submission
-We will acquire customers using primary founder sales outreach and industry-specific association partnerships.
+Target DMU: Plumber business owner ( Bob Miller ).
+Acquisition channel: Cold-calling local plumbers via Google Maps and offering a 14-day free trial where we set up the virtual number for them.
 
 ---
 
@@ -21,4 +22,6 @@ We will acquire customers using primary founder sales outreach and industry-spec
 ---
 
 ## 🎯 Synthesized Guide & Plan (BATCH_RUN_3)
-*A polished, actionable, execution-focused plan will be output here.*
+### S7: B2B acquisition strategy
+
+Offering a high-touch onboarding setup removes technical friction for tradesmen, maximizing free-to-paid conversions.

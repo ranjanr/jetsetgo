@@ -1,12 +1,14 @@
 # S3: The First 10 Customers
 **Pillar**: Pillar 1: Who Is Your Customer?
-**Status**: Draft
-**Resync Required**: Yes
+**Status**: Verified
+**Resync Required**: No
 
 ---
 
 ## 📥 Raw Submission
-Primary market validation sizing based on targeting 5000 total prospects, assuming a conservative 5% conversion at a $1200 unit price point.
+We cold-called and met with 12 solo plumbers in our local county. 10 of them confirmed that unanswered calls are their biggest source of lost revenue, and 7 agreed to try a voice co-pilot trial.
+
+We estimate there are 110,000 solo plumbers nationally. Our target conversion is 5% with a software SaaS subscription of $150/month ($1,800/year).
 
 ---
 
@@ -20,14 +22,14 @@ Primary market validation sizing based on targeting 5000 total prospects, assumi
 
 | Variable | Value | Description |
 | :--- | :--- | :--- |
-| Target Demographic Size | 5000 | Total potential accounts |
+| Target Demographic Size | 110000 | Total potential accounts |
 | Conversion Rate | 5% | Expected conversion rate |
-| Price Per Unit / Annual contract | $1200 | Average value per customer |
-| **Total Addressable Market (TAM)** | **$300000** | Estimated TAM (demographic * conversion * price) |
+| Price Per Unit / Annual contract | $1800 | Average value per customer |
+| **Total Addressable Market (TAM)** | **$9900000** | Estimated TAM (demographic * conversion * price) |
 
 ---
 
 ## 🎯 Synthesized Guide & Plan (BATCH_RUN_3)
-### TAM Sizing Overview
+### S3: B2B SaaS TAM Sizing
 
-Your beachhead TAM is estimated at **$300,000** annually. Focus on securing your first 10 reference customers to validate this conversion index.
+With 110,000 target solo plumbers, 5% penetration at $1,800/year yields a bottom-up TAM estimate of **$9,900,000/year**.

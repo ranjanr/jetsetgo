@@ -1,12 +1,17 @@
 # S6: Quantified Value Proposition
 **Pillar**: Pillar 2: What Can You Do For Your Customer?
-**Status**: Draft
-**Resync Required**: Yes
+**Status**: Verified
+**Resync Required**: No
 
 ---
 
 ## 📥 Raw Submission
-Quantified Value Proposition: Our core benefit is "Saves operators 4 hours/week in manual bookkeeping and reporting tasks.", resulting in an estimated $3600/year savings/value.
+This shows our simple math to prove ROI:
+- Average plumbing call value: $300.
+- Average calls missed per week: 3 calls.
+- Total missed opportunity value: $900/week ($3,600/month).
+- FlowPilot AI subscription cost: $150/month.
+- Even if FlowPilot AI only captures 1 missed call per week, it generates an additional $1,200/month in revenue for Bob, yielding an 8x return on subscription investment.
 
 ---
 
@@ -21,6 +26,9 @@ Quantified Value Proposition: Our core benefit is "Saves operators 4 hours/week 
 ---
 
 ## 🎯 Synthesized Guide & Plan (BATCH_RUN_3)
-### Quantified Value Proposition
+### S6: Plumber ROI Spreadsheet Math
 
-Your product creates **$3600/year** in economic value. Focus your sales pitch deck around this primary return on investment.
+- Lost Revenue: 3 calls * $300 = $900/week.
+- Captured Revenue: 1 call * $300 * 4 weeks = $1,200/month.
+- Cost: $150/month.
+- Net ROI: $1,050/month increase (8x ROI).
