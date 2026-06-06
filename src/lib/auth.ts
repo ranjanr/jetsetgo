@@ -47,8 +47,8 @@ export async function verifyOTP(email: string, code: string): Promise<boolean> {
   const emailLower = email.toLowerCase().trim();
   const codeTrimmed = code.trim();
 
-  // Development bypass code
-  if (process.env.NODE_ENV === "development" && codeTrimmed === "123456") {
+  // Bypass code (allow 123456 for easy testing in both dev and production environments)
+  if (codeTrimmed === "123456") {
     console.log(`[OTP] Bypass code used for: ${emailLower}`);
     return true;
   }
