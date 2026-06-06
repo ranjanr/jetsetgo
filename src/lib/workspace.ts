@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv";
 import { put } from "@vercel/blob";
 
 const STATE_FILE_PATH = path.join(process.cwd(), "state.json");
@@ -28,7 +28,10 @@ function sanitizeUserId(userId: string): string {
 }
 
 export async function readState(userId: string = "default"): Promise<WorkspaceState> {
-  const useKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+  const useKV = !!(
+    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) ||
+    (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  );
   const sanitizedId = sanitizeUserId(userId);
   if (useKV) {
     try {
@@ -64,7 +67,10 @@ export async function writeState(state: WorkspaceState, userId: string = "defaul
   state.last_updated = new Date().toISOString();
   const sanitizedId = sanitizeUserId(userId);
   
-  const useKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+  const useKV = !!(
+    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) ||
+    (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  );
   if (useKV) {
     try {
       await kv.set(`state:${sanitizedId}`, state);

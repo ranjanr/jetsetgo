@@ -1,4 +1,4 @@
-import { kv } from "@vercel/kv";
+import { kv } from "@/lib/kv";
 
 // In-memory fallback for local development (between hot-reloads)
 const localOtpMap = new Map<string, { code: string; expiresAt: number }>();
@@ -14,7 +14,10 @@ export async function generateOTP(email: string): Promise<string> {
   const expiresAt = Date.now() + ttlSeconds * 1000;
 
   const emailLower = email.toLowerCase().trim();
-  const useKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+  const useKV = !!(
+    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) ||
+    (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  );
 
   if (useKV) {
     try {
@@ -50,7 +53,10 @@ export async function verifyOTP(email: string, code: string): Promise<boolean> {
     return true;
   }
 
-  const useKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+  const useKV = !!(
+    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) ||
+    (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  );
   if (useKV) {
     try {
       const storedCode = await kv.get<string>(`otp:${emailLower}`);
