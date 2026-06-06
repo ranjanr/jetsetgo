@@ -23,11 +23,16 @@ export interface WorkspaceState {
   steps: Record<string, StepData>;
 }
 
+function sanitizeUserId(userId: string): string {
+  return userId.replace(/[^a-zA-Z0-9_\-]/g, "_");
+}
+
 export async function readState(userId: string = "default"): Promise<WorkspaceState> {
   const useKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+  const sanitizedId = sanitizeUserId(userId);
   if (useKV) {
     try {
-      const state = await kv.get<WorkspaceState>(`state:${userId}`);
+      const state = await kv.get<WorkspaceState>(`state:${sanitizedId}`);
       if (state) {
         return state;
       }
@@ -37,23 +42,32 @@ export async function readState(userId: string = "default"): Promise<WorkspaceSt
   }
 
   try {
-    if (fs.existsSync(STATE_FILE_PATH)) {
-      const data = fs.readFileSync(STATE_FILE_PATH, "utf8");
+    const userStatePath = userId === "default"
+      ? STATE_FILE_PATH
+      : path.join(process.cwd(), "users", sanitizedId, "state.json");
+
+    if (fs.existsSync(userStatePath)) {
+      const data = fs.readFileSync(userStatePath, "utf8");
       return JSON.parse(data);
     }
   } catch (error) {
     console.error("Error reading state.json:", error);
   }
-  return { startup_name: "JetSetGo", last_updated: new Date().toISOString(), steps: {} };
+  if (userId === "default") {
+    return { startup_name: "JetSetGo", last_updated: new Date().toISOString(), steps: {} };
+  } else {
+    return { startup_name: "", last_updated: "", steps: {} };
+  }
 }
 
 export async function writeState(state: WorkspaceState, userId: string = "default"): Promise<void> {
   state.last_updated = new Date().toISOString();
+  const sanitizedId = sanitizeUserId(userId);
   
   const useKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
   if (useKV) {
     try {
-      await kv.set(`state:${userId}`, state);
+      await kv.set(`state:${sanitizedId}`, state);
       return;
     } catch (error) {
       console.error("Error writing state to Vercel KV:", error);
@@ -61,7 +75,15 @@ export async function writeState(state: WorkspaceState, userId: string = "defaul
   }
 
   try {
-    fs.writeFileSync(STATE_FILE_PATH, JSON.stringify(state, null, 2), "utf8");
+    const userDir = userId === "default"
+      ? process.cwd()
+      : path.join(process.cwd(), "users", sanitizedId);
+    
+    if (!fs.existsSync(userDir)) {
+      fs.mkdirSync(userDir, { recursive: true });
+    }
+    const userStatePath = path.join(userDir, "state.json");
+    fs.writeFileSync(userStatePath, JSON.stringify(state, null, 2), "utf8");
   } catch (error) {
     console.error("Error writing state.json:", error);
   }
@@ -398,8 +420,6 @@ const stepPillars: Record<string, string> = {
 export async function writeStepMarkdown(step: StepData, userId: string = "default"): Promise<void> {
   const filename = stepFilenames[step.id];
   if (!filename) return;
-
-  const filepath = path.join(STEPS_DIR, filename);
   const pillar = stepPillars[step.id] || "";
 
   let structuredSection = "*Structured tables, operational schemas, or timeline diagrams will be generated here.*";
@@ -452,9 +472,10 @@ ${step.synthesized_output || "*A polished, actionable, execution-focused plan wi
 `;
 
   const useBlob = !!process.env.BLOB_READ_WRITE_TOKEN;
+  const sanitizedId = sanitizeUserId(userId);
   if (useBlob) {
     try {
-      const blobPath = `users/${userId}/steps/${filename}`;
+      const blobPath = `users/${sanitizedId}/steps/${filename}`;
       await put(blobPath, content, {
         access: "public",
         addRandomSuffix: false,
@@ -466,6 +487,14 @@ ${step.synthesized_output || "*A polished, actionable, execution-focused plan wi
   }
 
   try {
+    const userStepsDir = userId === "default"
+      ? STEPS_DIR
+      : path.join(process.cwd(), "users", sanitizedId, "steps");
+
+    if (!fs.existsSync(userStepsDir)) {
+      fs.mkdirSync(userStepsDir, { recursive: true });
+    }
+    const filepath = path.join(userStepsDir, filename);
     fs.writeFileSync(filepath, content, "utf8");
   } catch (error) {
     console.error("Error writing step markdown file locally:", error);

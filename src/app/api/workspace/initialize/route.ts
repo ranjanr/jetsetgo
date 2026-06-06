@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { writeState, writeStepMarkdown, evaluateDependencies, StepData } from "@/lib/workspace";
 
 export async function POST(request: Request) {
   try {
+    const cookieStore = await cookies();
     const body = await request.json();
     const { startup_name, product_idea, email, name, demoType } = body;
 
@@ -157,14 +159,23 @@ export async function POST(request: Request) {
         }
       };
 
+      const targetEmail = "demo-sonicsight";
+      cookieStore.set("foundero_session", targetEmail, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      });
+
       const stateObj = {
         startup_name: "SonicSight",
         last_updated: new Date().toISOString(),
         steps: demoSteps
       };
 
-      await writeState(stateObj);
-      await Promise.all(Object.values(demoSteps).map(step => writeStepMarkdown(step)));
+      await writeState(stateObj, targetEmail);
+      await Promise.all(Object.values(demoSteps).map(step => writeStepMarkdown(step, targetEmail)));
       const { steps: finalSteps, alerts } = evaluateDependencies(stateObj.steps);
       return NextResponse.json({ ...stateObj, steps: finalSteps, alerts, message: "Successfully loaded SonicSight Hardware Demo Venture!" });
     }
@@ -318,16 +329,30 @@ export async function POST(request: Request) {
         }
       };
 
+      const targetEmail = "demo-flowpilot";
+      cookieStore.set("foundero_session", targetEmail, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      });
+
       const stateObj = {
         startup_name: "FlowPilot AI",
         last_updated: new Date().toISOString(),
         steps: demoSteps
       };
 
-      await writeState(stateObj);
-      await Promise.all(Object.values(demoSteps).map(step => writeStepMarkdown(step)));
+      await writeState(stateObj, targetEmail);
+      await Promise.all(Object.values(demoSteps).map(step => writeStepMarkdown(step, targetEmail)));
       const { steps: finalSteps, alerts } = evaluateDependencies(stateObj.steps);
       return NextResponse.json({ ...stateObj, steps: finalSteps, alerts, message: "Successfully loaded FlowPilot AI Software Demo Venture!" });
+    }
+
+    const targetEmail = cookieStore.get("foundero_session")?.value || email;
+    if (!targetEmail || !targetEmail.includes("@")) {
+      return NextResponse.json({ error: "A valid session or email address is required to initialize a workspace." }, { status: 400 });
     }
 
     if (!startup_name || !product_idea) {
@@ -562,10 +587,10 @@ export async function POST(request: Request) {
     };
 
     // Save state.json
-    await writeState(stateObj);
+    await writeState(stateObj, targetEmail);
 
     // Sync all step markdown files in steps/
-    await Promise.all(Object.values(steps).map(step => writeStepMarkdown(step)));
+    await Promise.all(Object.values(steps).map(step => writeStepMarkdown(step, targetEmail)));
 
     const { steps: finalSteps, alerts } = evaluateDependencies(stateObj.steps);
     return NextResponse.json({ ...stateObj, steps: finalSteps, alerts, message: `Successfully initialized ${startup_name} with product idea context!` });

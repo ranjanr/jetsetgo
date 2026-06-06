@@ -15,6 +15,16 @@ export default function OnboardingLanding() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
 
+  // New authentication states
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [onboardingOtpRequired, setOnboardingOtpRequired] = useState(false);
+  const [onboardingOtpCode, setOnboardingOtpCode] = useState("");
+
   // Check if a venture workspace has already been initialized
   useEffect(() => {
     fetch("/api/workspace/state")
@@ -23,6 +33,9 @@ export default function OnboardingLanding() {
         const hasDrafts = Object.values(data.steps || {}).some(
           (s: any) => s.status !== "Not Started"
         );
+        if (data.session_email) {
+          setSessionEmail(data.session_email);
+        }
         if (
           data.startup_name &&
           data.startup_name !== "JetSetGo" &&
@@ -92,6 +105,74 @@ export default function OnboardingLanding() {
     "Finalizing workspace deployment..."
   ];
 
+  const handleSendOtp = async (targetEmail: string) => {
+    setOtpLoading(true);
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: targetEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send code.");
+      
+      setOtpSent(true);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (targetEmail: string, code: string, isSignupFlow: boolean = false) => {
+    setOtpLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: targetEmail, code }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Invalid verification code.");
+
+      setSessionEmail(targetEmail);
+
+      if (!isSignupFlow) {
+        // Fetch state to see if they have an active workspace
+        const stateRes = await fetch("/api/workspace/state");
+        const stateData = await stateRes.json();
+        
+        setIsSignInModalOpen(false);
+        setOtpSent(false);
+        setOtpCode("");
+        setOtpEmail("");
+
+        if (stateData.startup_name) {
+          router.push("/workspace");
+        } else {
+          setIsModalOpen(true);
+        }
+      }
+      return true;
+    } catch (err: any) {
+      alert(err.message);
+      return false;
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/auth/sign-out", { method: "POST" });
+      setSessionEmail(null);
+      setActiveStartup(null);
+      window.location.reload();
+    } catch (err) {
+      console.error("Sign out failed:", err);
+    }
+  };
+
   const handleInitialize = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!startupName || !productIdea) {
@@ -99,6 +180,39 @@ export default function OnboardingLanding() {
       return;
     }
 
+    if (!email || !email.includes("@")) {
+      alert("Please provide a valid email address.");
+      return;
+    }
+
+    // Step 1: If user is not logged in and OTP has not been requested yet, request it
+    if (!sessionEmail && !onboardingOtpRequired) {
+      setOtpLoading(true);
+      try {
+        const res = await fetch("/api/auth/send-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to send verification code.");
+        
+        setOnboardingOtpRequired(true);
+      } catch (err: any) {
+        alert(err.message);
+      } finally {
+        setOtpLoading(false);
+      }
+      return;
+    }
+
+    // Step 2: If OTP was required, verify it first
+    if (onboardingOtpRequired) {
+      const verified = await handleVerifyOtp(email, onboardingOtpCode, true);
+      if (!verified) return; // Verification failed; let user try again
+    }
+
+    // Step 3: Proceed to initialize workspace
     setLoading(true);
     setCurrentStep(0);
 
@@ -121,7 +235,7 @@ export default function OnboardingLanding() {
           startup_name: startupName,
           product_idea: productIdea,
           name: name || "Founder",
-          email: email || "founder@startup.edu"
+          email: email
         })
       });
 
@@ -187,6 +301,21 @@ export default function OnboardingLanding() {
             <a href="/" className="hover:text-slate-200 transition">Home</a>
             <a href="/workspace" className="hover:text-slate-200 transition">Workspace</a>
             <a href="/mentor" className="hover:text-slate-200 transition">Mentor Portal</a>
+            {sessionEmail ? (
+              <button
+                onClick={handleSignOut}
+                className="text-rose-400 hover:text-rose-355 font-semibold cursor-pointer border border-rose-900/40 px-2.5 py-1 rounded bg-rose-950/20 transition"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsSignInModalOpen(true)}
+                className="text-violet-400 hover:text-violet-355 font-semibold cursor-pointer border border-violet-900/40 px-2.5 py-1 rounded bg-violet-955/20 transition"
+              >
+                Sign In
+              </button>
+            )}
           </nav>
         </div>
       </header>
@@ -341,59 +470,104 @@ export default function OnboardingLanding() {
             </div>
 
             <form onSubmit={handleInitialize} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Your Name</label>
-                  <input
-                    type="text"
-                    placeholder="Sarah Jenkins"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100"
-                  />
+              {!onboardingOtpRequired ? (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Your Name</label>
+                      <input
+                        type="text"
+                        placeholder="Sarah Jenkins"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Email Address</label>
+                      <input
+                        type="email"
+                        placeholder="sarah@venture.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Venture / Startup Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. SonicSight"
+                      value={startupName}
+                      onChange={(e) => setStartupName(e.target.value)}
+                      required
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100 font-semibold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Startup / Product Idea</label>
+                    <textarea
+                      placeholder="e.g. ultrasonic eyeglasses cleaning box targeting boutique optometrist retail displays..."
+                      value={productIdea}
+                      onChange={(e) => setProductIdea(e.target.value)}
+                      required
+                      rows={4}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs focus:border-violet-500 focus:outline-none text-slate-100 leading-relaxed shadow-inner"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={otpLoading}
+                    className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer text-white disabled:opacity-50"
+                  >
+                    {otpLoading ? "Sending Code..." : "Launch Framework Accelerator →"}
+                  </button>
+                </>
+              ) : (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  <div className="bg-slate-950 border border-slate-850 p-4 rounded text-center">
+                    <p className="text-xs text-slate-350">
+                      We have sent a verification code to <br /><strong className="text-violet-300">{email}</strong>
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">
+                      Enter Verification Code (Or 123456 in dev mode)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 123456"
+                      maxLength={6}
+                      required
+                      value={onboardingOtpCode}
+                      onChange={(e) => setOnboardingOtpCode(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-center text-lg font-mono tracking-widest focus:border-violet-500 focus:outline-none text-slate-100 font-bold"
+                    />
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setOnboardingOtpRequired(false)}
+                      className="flex-1 py-3 bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-bold tracking-wide uppercase rounded-xl transition cursor-pointer"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={otpLoading}
+                      className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer text-white disabled:opacity-50"
+                    >
+                      {otpLoading ? "Verifying..." : "Verify & Launch →"}
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Email Address</label>
-                  <input
-                    type="email"
-                    placeholder="sarah@venture.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Venture / Startup Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. SonicSight"
-                  value={startupName}
-                  onChange={(e) => setStartupName(e.target.value)}
-                  required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100 font-semibold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Startup / Product Idea</label>
-                <textarea
-                  placeholder="e.g. ultrasonic eyeglasses cleaning box targeting boutique optometrist retail displays..."
-                  value={productIdea}
-                  onChange={(e) => setProductIdea(e.target.value)}
-                  required
-                  rows={4}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs focus:border-violet-500 focus:outline-none text-slate-100 leading-relaxed shadow-inner"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer text-white"
-              >
-                Launch Framework Accelerator →
-              </button>
+              )}
             </form>
           </div>
         </div>
@@ -503,6 +677,102 @@ export default function OnboardingLanding() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sign In / Resume Modal */}
+      {isSignInModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-8 space-y-6 shadow-2xl relative animate-in fade-in-50 zoom-in-95 duration-200">
+            <button
+              onClick={() => {
+                setIsSignInModalOpen(false);
+                setOtpSent(false);
+                setOtpEmail("");
+                setOtpCode("");
+              }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 text-lg cursor-pointer p-1"
+              title="Close Modal"
+            >
+              ✕
+            </button>
+
+            <div>
+              <h2 className="text-2xl font-bold">Resume Workspace</h2>
+              <p className="text-xs text-slate-200 mt-1 font-mono">Sign in to resume validation steps</p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!otpSent) {
+                  handleSendOtp(otpEmail);
+                } else {
+                  handleVerifyOtp(otpEmail, otpCode);
+                }
+              }}
+              className="space-y-4"
+            >
+              {!otpSent ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Email Address</label>
+                    <input
+                      type="email"
+                      placeholder="sarah@venture.com"
+                      required
+                      value={otpEmail}
+                      onChange={(e) => setOtpEmail(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={otpLoading}
+                    className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer text-white disabled:opacity-50"
+                  >
+                    {otpLoading ? "Sending Code..." : "Send Verification Code"}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-slate-950 border border-slate-850 p-3.5 rounded text-center">
+                    <p className="text-xs text-slate-350">
+                      Sent verification code to <br /><strong className="text-violet-300">{otpEmail}</strong>
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">
+                      Enter Verification Code (Or 123456 in dev mode)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 123456"
+                      maxLength={6}
+                      required
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-center text-lg font-mono tracking-widest focus:border-violet-500 focus:outline-none text-slate-100 font-bold"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={otpLoading}
+                    className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer text-white disabled:opacity-50"
+                  >
+                    {otpLoading ? "Verifying..." : "Verify & Resume Workspace →"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOtpSent(false)}
+                    className="w-full text-center text-slate-500 hover:text-slate-300 text-[10px] font-semibold uppercase tracking-wider font-mono cursor-pointer"
+                  >
+                    Change Email
+                  </button>
+                </div>
+              )}
+            </form>
           </div>
         </div>
       )}

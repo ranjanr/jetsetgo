@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { readState, writeState, runAIStepAnalysis, writeStepMarkdown, evaluateDependencies } from "@/lib/workspace";
 
 export async function POST(request: Request) {
   try {
+    const cookieStore = await cookies();
+    const email = cookieStore.get("foundero_session")?.value;
+
+    if (!email) {
+      return NextResponse.json({ error: "Unauthorized. Please sign in." }, { status: 401 });
+    }
+
     const body = await request.json();
     const { stepId, raw_submission, status, structured_data } = body;
 
@@ -10,7 +18,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "stepId is required" }, { status: 400 });
     }
 
-    const state = await readState();
+    const state = await readState(email);
     const step = state.steps[stepId];
     if (!step) {
       return NextResponse.json({ error: `Step ${stepId} not found` }, { status: 404 });
@@ -67,16 +75,16 @@ export async function POST(request: Request) {
       await Promise.all(["S2", "S3", "S4", "S6"].map(async (key) => {
         if (state.steps[key]) {
           state.steps[key].requires_resync = true;
-          await writeStepMarkdown(state.steps[key]);
+          await writeStepMarkdown(state.steps[key], email);
         }
       }));
     }
 
     // Write markdown log
-    await writeStepMarkdown(step);
+    await writeStepMarkdown(step, email);
 
     // Save master state
-    await writeState(state);
+    await writeState(state, email);
 
     const { steps, alerts } = evaluateDependencies(state.steps);
     return NextResponse.json({ ...state, steps, alerts });

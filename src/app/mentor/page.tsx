@@ -36,9 +36,14 @@ export default function MentorDashboard() {
       try {
         const res = await fetch("/api/workspace/state");
         const data = await res.json();
+        if (!data.startup_name) {
+          window.location.href = "/";
+          return;
+        }
         setLiveState(data);
       } catch (error) {
         console.error("Failed to fetch state:", error);
+        window.location.href = "/";
       } finally {
         setLoading(false);
       }

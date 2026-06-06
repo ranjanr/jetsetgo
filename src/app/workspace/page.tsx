@@ -115,6 +115,10 @@ export default function WorkspaceDashboard() {
     try {
       const res = await fetch("/api/workspace/state");
       const data = await res.json();
+      if (!data.startup_name) {
+        window.location.href = "/";
+        return;
+      }
       setState(data);
       if (data.steps && data.steps[selectedStepId]) {
         const step = data.steps[selectedStepId];
@@ -124,6 +128,7 @@ export default function WorkspaceDashboard() {
       }
     } catch (error) {
       console.error("Failed to load state:", error);
+      window.location.href = "/";
     } finally {
       setLoading(false);
     }
@@ -210,7 +215,14 @@ export default function WorkspaceDashboard() {
   };
 
   // Render the badge light icon for each step
-  const renderBadgeIcon = (step: Step) => {
+  const renderBadgeIcon = (step?: Step) => {
+    if (!step) {
+      return (
+        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-800 text-xs border border-slate-700 text-slate-100 font-bold">
+          ⚪
+        </span>
+      );
+    }
     const isLocked = isStepLocked(step.id);
     const hasSoftAlert = state?.alerts.some((a) => a.stepId === step.id);
     const requiresResync = step.requires_resync;
