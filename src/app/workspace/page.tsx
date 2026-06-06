@@ -332,28 +332,51 @@ export default function WorkspaceDashboard() {
   const activeStepAlerts = state.alerts.filter((a) => a.stepId === selectedStepId);
 
   return (
-    <div className="flex flex-1 overflow-hidden bg-slate-950 text-slate-100 font-sans">
-      {/* 1. SIDEBAR NAVIGATION */}
-      <aside className="w-80 border-r border-slate-800 bg-slate-900/50 flex flex-col">
-        <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">
-              {state.startup_name}
-            </h1>
-            <p className="text-xs text-slate-100 font-mono">Foundero Workspace</p>
-          </div>
-          <button
-            onClick={triggerResync}
-            disabled={syncing}
-            className={`px-2 py-1 text-xs border active:scale-95 transition rounded flex items-center gap-1 font-mono cursor-pointer ${
-              syncSuccess
-                ? "bg-emerald-600 border-emerald-500 text-white font-bold"
-                : "bg-slate-800 border-slate-700 hover:bg-slate-700 text-violet-300"
-            }`}
-          >
-            {syncing ? "Sync..." : syncSuccess ? "Synced ✓" : "/resync"}
-          </button>
+    <div className="flex flex-col h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden">
+      {/* Header */}
+      <header className="w-full border-b border-slate-900 bg-slate-950/70 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <a href="/" className="flex items-center gap-3 hover:opacity-90 transition">
+            <img 
+              src="/foundero_logo.png" 
+              alt="Foundero Logo" 
+              className="w-8 h-8 object-cover rounded-lg border border-slate-800"
+            />
+            <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-fuchsia-400 to-indigo-400">
+              Foundero
+            </span>
+          </a>
+          <nav className="flex items-center gap-6 text-xs font-semibold text-slate-400">
+            <a href="/" className="hover:text-slate-200 transition">Home</a>
+            <a href="/workspace" className="hover:text-slate-200 transition">Workspace</a>
+            <a href="/mentor" className="hover:text-slate-200 transition">Mentor Portal</a>
+          </nav>
         </div>
+      </header>
+
+      {/* Main split dashboard area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* 1. SIDEBAR NAVIGATION */}
+        <aside className="w-80 border-r border-slate-800 bg-slate-900/50 flex flex-col">
+          <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">
+                {state.startup_name}
+              </h1>
+              <p className="text-xs text-slate-100 font-mono">Foundero Workspace</p>
+            </div>
+            <button
+              onClick={triggerResync}
+              disabled={syncing}
+              className={`px-2 py-1 text-xs border active:scale-95 transition rounded flex items-center gap-1 font-mono cursor-pointer ${
+                syncSuccess
+                  ? "bg-emerald-600 border-emerald-500 text-white font-bold"
+                  : "bg-slate-800 border-slate-700 hover:bg-slate-700 text-violet-300"
+              }`}
+            >
+              {syncing ? "Sync..." : syncSuccess ? "Synced ✓" : "/resync"}
+            </button>
+          </div>
 
         <nav className="flex-1 overflow-y-auto p-4 space-y-4">
           {PILLARS.map((pillar) => {
@@ -403,21 +426,6 @@ export default function WorkspaceDashboard() {
             );
           })}
         </nav>
-        
-        <div className="p-4 border-t border-slate-800 bg-slate-950/40 space-y-2">
-          <a
-            href="/"
-            className="w-full py-2 px-4 bg-slate-950 border border-slate-850 hover:bg-slate-900 transition active:scale-98 rounded flex items-center justify-center gap-2 text-xs text-slate-200 font-semibold"
-          >
-            ← Onboarding Screen
-          </a>
-          <a
-            href="/mentor"
-            className="w-full py-2 px-4 bg-slate-800 border border-slate-700 hover:bg-slate-750 transition active:scale-98 rounded flex items-center justify-center gap-2 text-xs text-slate-100 font-semibold"
-          >
-            🛡️ Cohort Mentor Dashboard
-          </a>
-        </div>
       </aside>
 
       {/* 2. MAIN WORKSPACE */}
@@ -967,7 +975,27 @@ export default function WorkspaceDashboard() {
         )}
       </main>
     </div>
-  );
+
+    {/* Footer */}
+    <footer className="w-full border-t border-slate-900 bg-slate-950/85 py-4 mt-auto">
+      <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] text-slate-500 font-medium">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-slate-400">© 2026 Foundero</span>
+          <span className="text-slate-800">|</span>
+          <a href="https://foundero.app/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-350 transition font-mono">
+            foundero.app
+          </a>
+        </div>
+        <div className="flex items-center gap-6">
+          <a href="#privacy" className="hover:text-slate-350 transition">Privacy Policy</a>
+          <a href="#terms" className="hover:text-slate-350 transition">Terms of Service</a>
+          <a href="#support" className="hover:text-slate-350 transition">Contact Support</a>
+          <a href="#docs" className="hover:text-slate-350 transition">Documentation</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+);
 }
 
 // 📄 Muted Lightweight Markdown parser for premium HTML layouts

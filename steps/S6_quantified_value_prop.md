@@ -1,7 +1,7 @@
 # S6: Quantified Value Proposition
 **Pillar**: Pillar 2: What Can You Do For Your Customer?
 **Status**: Draft
-**Resync Required**: Yes
+**Resync Required**: No
 
 ---
 
