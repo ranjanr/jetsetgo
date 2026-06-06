@@ -68,7 +68,11 @@ export async function writeState(state: WorkspaceState, userId: string = "defaul
 }
 
 // 🌐 Gemini API Integration Wrapper with Retries and Model Fallbacks
-export async function callGemini(prompt: string, responseJson: boolean = false): Promise<string> {
+export async function callGemini(
+  prompt: string,
+  responseJson: boolean = false,
+  responseSchema?: any
+): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not defined.");
@@ -89,7 +93,10 @@ export async function callGemini(prompt: string, responseJson: boolean = false):
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: responseJson ? { responseMimeType: "application/json" } : undefined
+            generationConfig: responseJson ? { 
+              responseMimeType: "application/json",
+              responseSchema: responseSchema || undefined
+            } : undefined
           })
         });
 
@@ -151,6 +158,22 @@ export function runLocalCriticAnalysis(text: string): string[] {
   return alerts;
 }
 
+// Helper utility to safely parse JSON from Gemini's output
+function cleanAndParseJSON(jsonStr: string): any {
+  let cleaned = jsonStr.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\n?/i, "");
+    cleaned = cleaned.replace(/\n?```$/i, "");
+  }
+  cleaned = cleaned.trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.error("JSON.parse failed on text:", jsonStr);
+    throw error;
+  }
+}
+
 // 🧠 Dynamic AI generator for Pillar 1 and general steps
 export async function runAIStepAnalysis(
   stepId: string,
@@ -173,28 +196,69 @@ export async function runAIStepAnalysis(
     };
   }
 
-  try {
-    let prompt = "";
-    if (stepId === "S1") {
-      prompt = `You are the Critic (BATCH_RUN_1), Structure (BATCH_RUN_2), and Synthesizer (BATCH_RUN_3) agents. 
+  // Define response schemas to guarantee valid JSON structure and formatting
+  let schema: any = undefined;
+  let prompt = "";
+  
+  const commonInstructions = `
+CRITICAL JSON FORMATTING RULES:
+1. You MUST return a single, valid JSON object matching the requested schema.
+2. To avoid escaping errors, do NOT use double quotes (") inside your "synthesized_output" markdown text. Instead, use single quotes (') or markdown styling (*italics* or **bold**).
+3. Do NOT include literal unescaped newlines or tabs inside any JSON string values; write "\\n" for newlines.
+`;
+
+  if (stepId === "S1") {
+    schema = {
+      type: "OBJECT",
+      properties: {
+        critic_alerts: {
+          type: "ARRAY",
+          items: { type: "STRING" }
+        },
+        markets: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              name: { type: "STRING" },
+              funded: { type: "STRING", enum: ["High", "Medium", "Low"] },
+              compelling_reason: { type: "STRING", enum: ["High", "Medium", "Low"] },
+              value: { type: "INTEGER" }
+            },
+            required: ["name", "funded", "compelling_reason", "value"]
+          }
+        },
+        synthesized_output: { type: "STRING" }
+      },
+      required: ["critic_alerts", "markets", "synthesized_output"]
+    };
+
+    prompt = `You are the Critic (BATCH_RUN_1), Structure (BATCH_RUN_2), and Synthesizer (BATCH_RUN_3) agents. 
 The product concept is "${productIdea}". The entrepreneur submitted these raw market segmentation notes: "${rawSubmission}".
 
 Analyze this:
 1. Critic: Spot logical leaps, confirmation bias, or unverified claims. If statistics, growth rates, or sizing are claimed without an interview or survey cited, include "[!! CRITIC ALERT: Unverified Synthetic Metric]". If they claim mass market appeal or "everyone", include "[!! CRITIC ALERT: Mass Market Fallacy]".
 2. Structure: Extract target market segments and score them from 1 to 10 on priority.
 3. Synthesizer: Output a polished, actionable markdown action plan.
+${commonInstructions}`;
+  } else if (stepId === "S2") {
+    const beachheadName = currentState.steps?.["S1"]?.structured_data?.markets?.[0]?.name || "Beachhead Market";
+    schema = {
+      type: "OBJECT",
+      properties: {
+        critic_alerts: {
+          type: "ARRAY",
+          items: { type: "STRING" }
+        },
+        persona_name: { type: "STRING" },
+        role: { type: "STRING" },
+        pain_points: { type: "STRING" },
+        synthesized_output: { type: "STRING" }
+      },
+      required: ["critic_alerts", "persona_name", "role", "pain_points", "synthesized_output"]
+    };
 
-Return your response EXACTLY as a JSON object matching this schema:
-{
-  "critic_alerts": ["..."],
-  "markets": [
-    { "name": "Segment Name", "funded": "High" | "Medium" | "Low", "compelling_reason": "High" | "Medium" | "Low", "value": 8 }
-  ],
-  "synthesized_output": "Markdown plan string here"
-}`;
-    } else if (stepId === "S2") {
-      const beachheadName = currentState.steps?.["S1"]?.structured_data?.markets?.[0]?.name || "Beachhead Market";
-      prompt = `You are the Critic, Structure, and Synthesizer agents.
+    prompt = `You are the Critic, Structure, and Synthesizer agents.
 Product: "${productIdea}". Beachhead Market: "${beachheadName}". 
 Raw persona notes: "${rawSubmission}".
 
@@ -202,19 +266,26 @@ Analyze this:
 1. Critic: Spot leaps or unverified assumptions about user habits or demographics.
 2. Structure: Extract the persona's name, role, and key pain points.
 3. Synthesizer: Provide an actionable persona summary in markdown.
+${commonInstructions}`;
+  } else if (stepId === "S3") {
+    const personaName = currentState.steps?.["S2"]?.structured_data?.persona_name || "Target Persona";
+    const personaRole = currentState.steps?.["S2"]?.structured_data?.role || "Target Role";
+    schema = {
+      type: "OBJECT",
+      properties: {
+        critic_alerts: {
+          type: "ARRAY",
+          items: { type: "STRING" }
+        },
+        demographic_size: { type: "INTEGER" },
+        conversion_rate: { type: "NUMBER" },
+        price_per_unit: { type: "INTEGER" },
+        synthesized_output: { type: "STRING" }
+      },
+      required: ["critic_alerts", "demographic_size", "conversion_rate", "price_per_unit", "synthesized_output"]
+    };
 
-Return your response EXACTLY as a JSON object matching this schema:
-{
-  "critic_alerts": ["..."],
-  "persona_name": "Sarah Jenkins",
-  "role": "Boutique Optician",
-  "pain_points": "Key pain points here",
-  "synthesized_output": "Markdown string here"
-}`;
-    } else if (stepId === "S3") {
-      const personaName = currentState.steps?.["S2"]?.structured_data?.persona_name || "Target Persona";
-      const personaRole = currentState.steps?.["S2"]?.structured_data?.role || "Target Role";
-      prompt = `You are the Critic, Structure, and Synthesizer agents.
+    prompt = `You are the Critic, Structure, and Synthesizer agents.
 Product: "${productIdea}". Target Persona: "${personaName}" (${personaRole}).
 Raw customer validation notes: "${rawSubmission}".
 
@@ -222,18 +293,23 @@ Analyze this:
 1. Critic: Check if they spoke to 10 potential customers or cited interview insights. Add unverified metric warnings if necessary.
 2. Structure: Extrapolate TAM inputs (Demographic size [integer], conversion rate [float, 0 to 1], and price per contract [integer]).
 3. Synthesizer: Provide a customer validation and pricing checklist in markdown.
+${commonInstructions}`;
+  } else {
+    schema = {
+      type: "OBJECT",
+      properties: {
+        critic_alerts: {
+          type: "ARRAY",
+          items: { type: "STRING" }
+        },
+        structured_data: { type: "OBJECT" },
+        synthesized_output: { type: "STRING" }
+      },
+      required: ["critic_alerts", "structured_data", "synthesized_output"]
+    };
 
-Return your response EXACTLY as a JSON object matching this schema:
-{
-  "critic_alerts": ["..."],
-  "demographic_size": 12000,
-  "conversion_rate": 0.04,
-  "price_per_unit": 15000,
-  "synthesized_output": "Markdown string here"
-}`;
-    } else {
-      // General steps prompt
-      prompt = `You are the Critic, Structure, and Synthesizer agents.
+    // General steps prompt
+    prompt = `You are the Critic, Structure, and Synthesizer agents.
 Product Idea: "${productIdea}". Step: "${stepId}".
 User raw submission: "${rawSubmission}".
 
@@ -241,17 +317,12 @@ Analyze this:
 1. Critic: Spot leaps, unverified claims, or economic fallacies.
 2. Structure: Extract relevant key details.
 3. Synthesizer: Output a polished, actionable plan in markdown.
+${commonInstructions}`;
+  }
 
-Return your response EXACTLY as a JSON object matching this schema:
-{
-  "critic_alerts": ["..."],
-  "structured_data": {},
-  "synthesized_output": "Markdown string here"
-}`;
-    }
-
-    const aiResponse = await callGemini(prompt, true);
-    const parsed = JSON.parse(aiResponse);
+  try {
+    const aiResponse = await callGemini(prompt, true, schema);
+    const parsed = cleanAndParseJSON(aiResponse);
 
     // Schema normalization
     let structured_data: any = {};

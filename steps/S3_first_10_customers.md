@@ -1,7 +1,7 @@
 # S3: The First 10 Customers
 **Pillar**: Pillar 1: Who Is Your Customer?
 **Status**: Draft
-**Resync Required**: No
+**Resync Required**: Yes
 
 ---
 
