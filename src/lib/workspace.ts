@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { kv } from "@/lib/kv";
 import { put } from "@vercel/blob";
 
@@ -25,6 +26,67 @@ export interface WorkspaceState {
 
 function sanitizeUserId(userId: string): string {
   return userId.replace(/[^a-zA-Z0-9_\-]/g, "_");
+}
+
+export function hashPassword(password: string): string {
+  return crypto.createHash("sha256").update(password).digest("hex");
+}
+
+export async function readUserCredentials(userId: string): Promise<{ passwordHash: string } | null> {
+  const sanitizedId = sanitizeUserId(userId);
+  const useKV = !!(
+    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) ||
+    (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  );
+
+  if (useKV) {
+    try {
+      const creds = await kv.get<{ passwordHash: string }>(`user_credentials:${sanitizedId}`);
+      if (creds) return creds;
+    } catch (error) {
+      console.error("Error reading credentials from Vercel KV:", error);
+    }
+  }
+
+  try {
+    const credsPath = path.join(process.cwd(), "users", sanitizedId, "credentials.json");
+    if (fs.existsSync(credsPath)) {
+      const data = fs.readFileSync(credsPath, "utf8");
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error("Error reading credentials locally:", error);
+  }
+
+  return null;
+}
+
+export async function writeUserCredentials(userId: string, credentials: { passwordHash: string }): Promise<void> {
+  const sanitizedId = sanitizeUserId(userId);
+  const useKV = !!(
+    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) ||
+    (process.env.UPSTASH_REDIS_REST_TOKEN && process.env.UPSTASH_REDIS_REST_URL)
+  );
+
+  if (useKV) {
+    try {
+      await kv.set(`user_credentials:${sanitizedId}`, credentials);
+      return;
+    } catch (error) {
+      console.error("Error writing credentials to Vercel KV:", error);
+    }
+  }
+
+  try {
+    const userDir = path.join(process.cwd(), "users", sanitizedId);
+    if (!fs.existsSync(userDir)) {
+      fs.mkdirSync(userDir, { recursive: true });
+    }
+    const credsPath = path.join(userDir, "credentials.json");
+    fs.writeFileSync(credsPath, JSON.stringify(credentials, null, 2), "utf8");
+  } catch (error) {
+    console.error("Error writing credentials locally:", error);
+  }
 }
 
 export async function readState(userId: string = "default"): Promise<WorkspaceState> {

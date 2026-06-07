@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { writeState, writeStepMarkdown, evaluateDependencies, StepData } from "@/lib/workspace";
+import { writeState, writeStepMarkdown, evaluateDependencies, StepData, readUserCredentials, writeUserCredentials, hashPassword } from "@/lib/workspace";
 
 export async function POST(request: Request) {
   try {
@@ -350,9 +350,34 @@ export async function POST(request: Request) {
       return NextResponse.json({ ...stateObj, steps: finalSteps, alerts, message: "Successfully loaded FlowPilot AI Software Demo Venture!" });
     }
 
+    const { password } = body;
+    const hasSession = !!cookieStore.get("foundero_session")?.value;
     const targetEmail = cookieStore.get("foundero_session")?.value || email;
+
     if (!targetEmail || !targetEmail.includes("@")) {
       return NextResponse.json({ error: "A valid session or email address is required to initialize a workspace." }, { status: 400 });
+    }
+
+    if (!hasSession) {
+      if (!password || password.length < 6) {
+        return NextResponse.json({ error: "A password of at least 6 characters is required to register." }, { status: 400 });
+      }
+
+      const existingCreds = await readUserCredentials(targetEmail);
+      if (existingCreds) {
+        return NextResponse.json({ error: "An account with this email address already exists. Please sign in instead." }, { status: 400 });
+      }
+
+      const passwordHash = hashPassword(password);
+      await writeUserCredentials(targetEmail, { passwordHash });
+
+      cookieStore.set("foundero_session", targetEmail.toLowerCase().trim(), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      });
     }
 
     if (!startup_name || !product_idea) {

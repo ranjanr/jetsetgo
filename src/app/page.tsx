@@ -17,13 +17,11 @@ export default function OnboardingLanding() {
 
   // New authentication states
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
-  const [otpEmail, setOtpEmail] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [onboardingPassword, setOnboardingPassword] = useState("");
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
-  const [onboardingOtpRequired, setOnboardingOtpRequired] = useState(false);
-  const [onboardingOtpCode, setOnboardingOtpCode] = useState("");
 
   // Check if a venture workspace has already been initialized
   useEffect(() => {
@@ -105,60 +103,41 @@ export default function OnboardingLanding() {
     "Finalizing workspace deployment..."
   ];
 
-  const handleSendOtp = async (targetEmail: string) => {
-    setOtpLoading(true);
-    try {
-      const res = await fetch("/api/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: targetEmail }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to send code.");
-      
-      setOtpSent(true);
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setOtpLoading(false);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginEmail || !loginPassword) {
+      alert("Please enter both email and password.");
+      return;
     }
-  };
 
-  const handleVerifyOtp = async (targetEmail: string, code: string, isSignupFlow: boolean = false) => {
-    setOtpLoading(true);
+    setLoginLoading(true);
     try {
-      const res = await fetch("/api/auth/verify-otp", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: targetEmail, code }),
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Invalid verification code.");
+      if (!res.ok) throw new Error(data.error || "Failed to log in.");
 
-      setSessionEmail(targetEmail);
+      setSessionEmail(loginEmail);
+      setIsSignInModalOpen(false);
+      setLoginEmail("");
+      setLoginPassword("");
 
-      if (!isSignupFlow) {
-        // Fetch state to see if they have an active workspace
-        const stateRes = await fetch("/api/workspace/state");
-        const stateData = await stateRes.json();
-        
-        setIsSignInModalOpen(false);
-        setOtpSent(false);
-        setOtpCode("");
-        setOtpEmail("");
-
-        if (stateData.startup_name) {
-          router.push("/workspace");
-        } else {
-          setIsModalOpen(true);
-        }
+      // Fetch state to see if they have an active workspace
+      const stateRes = await fetch("/api/workspace/state");
+      const stateData = await stateRes.json();
+      
+      if (stateData.startup_name) {
+        router.push("/workspace");
+      } else {
+        setIsModalOpen(true);
       }
-      return true;
     } catch (err: any) {
       alert(err.message);
-      return false;
     } finally {
-      setOtpLoading(false);
+      setLoginLoading(false);
     }
   };
 
@@ -185,38 +164,14 @@ export default function OnboardingLanding() {
       return;
     }
 
-    // Step 1: If user is not logged in and OTP has not been requested yet, request it
-    if (!sessionEmail && !onboardingOtpRequired) {
-      setOtpLoading(true);
-      try {
-        const res = await fetch("/api/auth/send-otp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to send verification code.");
-        
-        setOnboardingOtpRequired(true);
-      } catch (err: any) {
-        alert(err.message);
-      } finally {
-        setOtpLoading(false);
-      }
+    if (!sessionEmail && (!onboardingPassword || onboardingPassword.length < 6)) {
+      alert("Please provide a password of at least 6 characters.");
       return;
     }
 
-    // Step 2: If OTP was required, verify it first
-    if (onboardingOtpRequired) {
-      const verified = await handleVerifyOtp(email, onboardingOtpCode, true);
-      if (!verified) return; // Verification failed; let user try again
-    }
-
-    // Step 3: Proceed to initialize workspace
     setLoading(true);
     setCurrentStep(0);
 
-    // Simulate animated loading steps for a rich entrepreneurship accelerator experience
     const interval = setInterval(() => {
       setCurrentStep((prev) => {
         if (prev < loadingSteps.length - 1) {
@@ -235,24 +190,27 @@ export default function OnboardingLanding() {
           startup_name: startupName,
           product_idea: productIdea,
           name: name || "Founder",
-          email: email
+          email: email,
+          password: onboardingPassword
         })
       });
 
+      const data = await res.json();
       if (!res.ok) {
-        throw new Error("Failed to initialize state.");
+        throw new Error(data.error || "Failed to initialize state.");
       }
 
-      // Briefly wait at the final step before redirecting
+      setSessionEmail(email);
+
       setTimeout(() => {
         clearInterval(interval);
         router.push("/workspace");
       }, 4800);
 
-    } catch (err) {
+    } catch (err: any) {
       clearInterval(interval);
       setLoading(false);
-      alert("An error occurred during initialization. Please try again.");
+      alert(err.message || "An error occurred during initialization. Please try again.");
     }
   };
 
@@ -466,108 +424,79 @@ export default function OnboardingLanding() {
 
             <div>
               <h2 className="text-2xl font-bold">Launch Onboarding Session</h2>
-              <p className="text-xs text-slate-200 mt-1 font-mono">Initialize your local workspace payload</p>
+              <p className="text-xs text-slate-200 mt-1 font-mono">Initialize your local workspace with a new startup venture or resume an active session.</p>
             </div>
 
             <form onSubmit={handleInitialize} className="space-y-4">
-              {!onboardingOtpRequired ? (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Your Name</label>
-                      <input
-                        type="text"
-                        placeholder="Sarah Jenkins"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Email Address</label>
-                      <input
-                        type="email"
-                        placeholder="sarah@venture.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100"
-                      />
-                    </div>
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Your Name</label>
+                  <input
+                    type="text"
+                    placeholder="Sarah Jenkins"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="sarah@venture.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100"
+                  />
+                </div>
+              </div>
 
-                  <div>
-                    <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Venture / Startup Name</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. SonicSight"
-                      value={startupName}
-                      onChange={(e) => setStartupName(e.target.value)}
-                      required
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100 font-semibold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Startup / Product Idea</label>
-                    <textarea
-                      placeholder="e.g. ultrasonic eyeglasses cleaning box targeting boutique optometrist retail displays..."
-                      value={productIdea}
-                      onChange={(e) => setProductIdea(e.target.value)}
-                      required
-                      rows={4}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs focus:border-violet-500 focus:outline-none text-slate-100 leading-relaxed shadow-inner"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={otpLoading}
-                    className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer text-white disabled:opacity-50"
-                  >
-                    {otpLoading ? "Sending Code..." : "Launch Framework Accelerator →"}
-                  </button>
-                </>
-              ) : (
-                <div className="space-y-4 animate-in fade-in duration-300">
-                  <div className="bg-slate-950 border border-slate-850 p-4 rounded text-center">
-                    <p className="text-xs text-slate-350">
-                      We have sent a verification code to <br /><strong className="text-violet-300">{email}</strong>
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">
-                      Enter Verification Code (Or 123456 in dev mode)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 123456"
-                      maxLength={6}
-                      required
-                      value={onboardingOtpCode}
-                      onChange={(e) => setOnboardingOtpCode(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-center text-lg font-mono tracking-widest focus:border-violet-500 focus:outline-none text-slate-100 font-bold"
-                    />
-                  </div>
-
-                  <div className="flex gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setOnboardingOtpRequired(false)}
-                      className="flex-1 py-3 bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-bold tracking-wide uppercase rounded-xl transition cursor-pointer"
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={otpLoading}
-                      className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer text-white disabled:opacity-50"
-                    >
-                      {otpLoading ? "Verifying..." : "Verify & Launch →"}
-                    </button>
-                  </div>
+              {!sessionEmail && (
+                <div>
+                  <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Create Account Password (min. 6 chars)</label>
+                  <input
+                    type="password"
+                    placeholder="••••••"
+                    value={onboardingPassword}
+                    onChange={(e) => setOnboardingPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100 font-mono"
+                  />
                 </div>
               )}
+
+              <div>
+                <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Venture / Startup Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. SonicSight"
+                  value={startupName}
+                  onChange={(e) => setStartupName(e.target.value)}
+                  required
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100 font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Startup / Product Idea</label>
+                <textarea
+                  placeholder="e.g. ultrasonic eyeglasses cleaning box targeting boutique optometrist retail displays..."
+                  value={productIdea}
+                  onChange={(e) => setProductIdea(e.target.value)}
+                  required
+                  rows={3}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs focus:border-violet-500 focus:outline-none text-slate-100 leading-relaxed shadow-inner"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer text-white"
+              >
+                Launch Framework Accelerator →
+              </button>
             </form>
           </div>
         </div>
@@ -688,9 +617,8 @@ export default function OnboardingLanding() {
             <button
               onClick={() => {
                 setIsSignInModalOpen(false);
-                setOtpSent(false);
-                setOtpEmail("");
-                setOtpCode("");
+                setLoginEmail("");
+                setLoginPassword("");
               }}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 text-lg cursor-pointer p-1"
               title="Close Modal"
@@ -703,75 +631,38 @@ export default function OnboardingLanding() {
               <p className="text-xs text-slate-200 mt-1 font-mono">Sign in to resume validation steps</p>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!otpSent) {
-                  handleSendOtp(otpEmail);
-                } else {
-                  handleVerifyOtp(otpEmail, otpCode);
-                }
-              }}
-              className="space-y-4"
-            >
-              {!otpSent ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Email Address</label>
-                    <input
-                      type="email"
-                      placeholder="sarah@venture.com"
-                      required
-                      value={otpEmail}
-                      onChange={(e) => setOtpEmail(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={otpLoading}
-                    className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer text-white disabled:opacity-50"
-                  >
-                    {otpLoading ? "Sending Code..." : "Send Verification Code"}
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-slate-950 border border-slate-850 p-3.5 rounded text-center">
-                    <p className="text-xs text-slate-350">
-                      Sent verification code to <br /><strong className="text-violet-300">{otpEmail}</strong>
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">
-                      Enter Verification Code (Or 123456 in dev mode)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 123456"
-                      maxLength={6}
-                      required
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-center text-lg font-mono tracking-widest focus:border-violet-500 focus:outline-none text-slate-100 font-bold"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={otpLoading}
-                    className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer text-white disabled:opacity-50"
-                  >
-                    {otpLoading ? "Verifying..." : "Verify & Resume Workspace →"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOtpSent(false)}
-                    className="w-full text-center text-slate-500 hover:text-slate-300 text-[10px] font-semibold uppercase tracking-wider font-mono cursor-pointer"
-                  >
-                    Change Email
-                  </button>
-                </div>
-              )}
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Email Address</label>
+                <input
+                  type="email"
+                  placeholder="sarah@venture.com"
+                  required
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-150 uppercase tracking-wider font-mono mb-1">Password</label>
+                <input
+                  type="password"
+                  placeholder="••••••"
+                  required
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:border-violet-500 focus:outline-none text-slate-100 font-mono"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold tracking-wide uppercase rounded-xl transition transform active:scale-98 shadow shadow-violet-900/40 cursor-pointer text-white disabled:opacity-50"
+              >
+                {loginLoading ? "Signing In..." : "Verify & Resume Workspace →"}
+              </button>
             </form>
           </div>
         </div>
