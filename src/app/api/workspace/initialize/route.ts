@@ -351,8 +351,9 @@ export async function POST(request: Request) {
     }
 
     const { password } = body;
-    const hasSession = !!cookieStore.get("foundero_session")?.value;
-    const targetEmail = cookieStore.get("foundero_session")?.value || email;
+    const sessionCookieValue = cookieStore.get("foundero_session")?.value;
+    const hasSession = !!sessionCookieValue && sessionCookieValue.includes("@");
+    const targetEmail = hasSession ? sessionCookieValue : email;
 
     if (!targetEmail || !targetEmail.includes("@")) {
       return NextResponse.json({ error: "A valid session or email address is required to initialize a workspace." }, { status: 400 });
